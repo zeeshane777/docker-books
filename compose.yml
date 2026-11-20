@@ -1,0 +1,42 @@
+name: tp-docker
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tp-docker-api:1.0.0
+    container_name: tp-docker-api
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    environment:
+      PORT: ${PORT:-3000}
+      MONGO_URL: ${MONGO_URL:-mongodb://mongo:27017/books}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - tp-docker-network
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7.0
+    container_name: tp-docker-mongo
+    volumes:
+      - tp-docker-mongo-data:/data/db
+    networks:
+      - tp-docker-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  tp-docker-mongo-data:
+    name: tp-docker-mongo-data
+
+networks:
+  tp-docker-network:
+    name: tp-docker-network
